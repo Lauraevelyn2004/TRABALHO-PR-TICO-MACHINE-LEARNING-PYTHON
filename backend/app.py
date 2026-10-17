@@ -4,8 +4,14 @@ import joblib
 from extrator import extrair_features_url, COLUNAS_FEATURES
 
 app = Flask(__name__)
-# Permitir explicitamente todas as origens e métodos para evitar bloqueios de preflight na Vercel
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
 
 # Carregar o modelo Random Forest treinado
 modelo = joblib.load("modelo_pkl" if False else "modelo_rf.pkl")
