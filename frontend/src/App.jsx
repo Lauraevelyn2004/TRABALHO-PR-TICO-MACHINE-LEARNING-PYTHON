@@ -7,7 +7,7 @@ function App() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'https://phishguard-api.onrender.com/predict';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://phishguard-api-ksmh.onrender.com/predict';
 
   const analisarUrl = async (e) => {
     e.preventDefault();
