@@ -1,0 +1,13 @@
+# Dependências e Builds
+node_modules/
+dist/
+build/
+__pycache__/
+.env
+.venv/
+venv/
+
+# Ficheiros de dados pesados e temporários (não enviar para o GitHub)
+backend/kaggle_urls.csv
+backend/dataset_urls.csv
+backend/teste_sem_classificador.csv
