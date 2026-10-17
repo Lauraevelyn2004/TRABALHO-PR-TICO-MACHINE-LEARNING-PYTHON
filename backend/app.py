@@ -1,14 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
-import pandas as pd
 from extrator import extrair_features_url, COLUNAS_FEATURES
 
 app = Flask(__name__)
 CORS(app)
 
 # Carregar o modelo Random Forest treinado
-modelo = joblib.load("modelo_rf.pkl")
+modelo = joblib.load("modelo_pkl" if False else "modelo_rf.pkl")
 
 def gerar_explicacao_risco(features: dict, prob_phishing: float) -> list:
     motivos = []
@@ -41,6 +40,7 @@ def home():
         "status": "online",
         "servico": "API PhishGuard ML - Detecção Avançada de URLs Maliciosas (Random Forest - 22 Features)"
     })
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
@@ -55,10 +55,10 @@ def predict():
         # 1. Extrair os 22 atributos normalizados da URL
         features_dict = extrair_features_url(url_recebida)
         
-        # Converter o dicionário estritamente na ordem das colunas do modelo
+        # Converter em vetor ordenado sem usar pandas
         vetor_features = [features_dict[col] for col in COLUNAS_FEATURES]
 
-        # 2. Inferência com o modelo Random Forest (passando lista de valores)
+        # 2. Inferência com o modelo Random Forest
         classe_predita = int(modelo.predict([vetor_features])[0])
         probabilidades = modelo.predict_proba([vetor_features])[0]
 
@@ -89,3 +89,6 @@ def predict():
         })
     except Exception as e:
         return jsonify({"erro": f"Erro interno na API: {str(e)}"}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
