@@ -41,50 +41,51 @@ def home():
         "status": "online",
         "servico": "API PhishGuard ML - Detecção Avançada de URLs Maliciosas (Random Forest - 22 Features)"
     })
-
 @app.route("/predict", methods=["POST"])
 def predict():
-    dados = request.get_json(silent=True)
-    if not dados or "url" not in dados:
-        return jsonify({"erro": "Por favor, envie o campo 'url' no corpo do JSON."}), 400
+    try:
+        dados = request.get_json(silent=True)
+        if not dados or "url" not in dados:
+            return jsonify({"erro": "Por favor, envie o campo 'url' no corpo do JSON."}), 400
 
-    url_recebida = str(dados["url"]).strip()
-    if not url_recebida:
-        return jsonify({"erro": "A URL não pode estar vazia."}), 400
+        url_recebida = str(dados["url"]).strip()
+        if not url_recebida:
+            return jsonify({"erro": "A URL não pode estar vazia."}), 400
 
-    # 1. Extrair os 22 atributos normalizados da URL
-    features_dict = extrair_features_url(url_recebida)
-    df_input = pd.DataFrame([features_dict])[COLUNAS_FEATURES]
+        # 1. Extrair os 22 atributos normalizados da URL
+        features_dict = extrair_features_url(url_recebida)
+        
+        # Converter o dicionário estritamente na ordem das colunas do modelo
+        vetor_features = [features_dict[col] for col in COLUNAS_FEATURES]
 
-    # 2. Inferência com o modelo Random Forest
-    classe_predita = int(modelo.predict(df_input)[0])
-    probabilidades = modelo.predict_proba(df_input)[0]
+        # 2. Inferência com o modelo Random Forest (passando lista de valores)
+        classe_predita = int(modelo.predict([vetor_features])[0])
+        probabilidades = modelo.predict_proba([vetor_features])[0]
 
-    risco_phishing = round(float(probabilidades[1]) * 100, 2)
-    confianca_segura = round(float(probabilidades[0]) * 100, 2)
+        risco_phishing = round(float(probabilidades[1]) * 100, 2)
+        confianca_segura = round(float(probabilidades[0]) * 100, 2)
 
-    # 3. Classificar nível de severidade
-    if risco_phishing >= 80:
-        nivel_risco = "Crítico"
-    elif risco_phishing >= 50:
-        nivel_risco = "Alto"
-    elif risco_phishing >= 25:
-        nivel_risco = "Moderado"
-    else:
-        nivel_risco = "Baixo (Seguro)"
+        # 3. Classificar nível de severidade
+        if risco_phishing >= 80:
+            nivel_risco = "Crítico"
+        elif risco_phishing >= 50:
+            nivel_risco = "Alto"
+        elif risco_phishing >= 25:
+            nivel_risco = "Moderado"
+        else:
+            nivel_risco = "Baixo (Seguro)"
 
-    motivos = gerar_explicacao_risco(features_dict, risco_phishing)
+        motivos = gerar_explicacao_risco(features_dict, risco_phishing)
 
-    return jsonify({
-        "url": url_recebida,
-        "classificacao": "Maliciosa / Phishing" if classe_predita == 1 else "URL Segura",
-        "codigo_classe": classe_predita,
-        "nivel_risco": nivel_risco,
-        "probabilidade_phishing": risco_phishing,
-        "probabilidade_segura": confianca_segura,
-        "motivos_alerta": motivos,
-        "features_extraidas": features_dict
-    })
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+        return jsonify({
+            "url": url_recebida,
+            "classificacao": "Maliciosa / Phishing" if classe_predita == 1 else "URL Segura",
+            "codigo_classe": classe_predita,
+            "nivel_risco": nivel_risco,
+            "probabilidade_phishing": risco_phishing,
+            "probabilidade_segura": confianca_segura,
+            "motivos_alerta": motivos,
+            "features_extraidas": features_dict
+        })
+    except Exception as e:
+        return jsonify({"erro": f"Erro interno na API: {str(e)}"}), 500
